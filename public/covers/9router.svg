@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" role="img" aria-label="Request routing fanning across multiple model providers">
+  <defs>
+    <linearGradient id="r-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#060A12"/>
+      <stop offset="0.6" stop-color="#0C1526"/>
+      <stop offset="1" stop-color="#08080A"/>
+    </linearGradient>
+    <linearGradient id="r-gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F0D07A"/>
+      <stop offset="1" stop-color="#B98A2A"/>
+    </linearGradient>
+    <linearGradient id="r-beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8C266" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#E8C266" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0.15"/>
+    </linearGradient>
+    <radialGradient id="r-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#3B82F6" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="r-grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0v48" fill="none" stroke="#60A5FA" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="750" fill="url(#r-bg)"/>
+  <rect width="1200" height="750" fill="url(#r-grid)"/>
+  <ellipse cx="330" cy="375" rx="380" ry="330" fill="url(#r-glow)"/>
+
+  <!-- ingress -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" letter-spacing="3" fill="#60A5FA" fill-opacity="0.6">
+    <text x="72" y="100">INGRESS</text>
+    <text x="836" y="100" fill="#E8C266" fill-opacity="0.75">PROVIDERS</text>
+  </g>
+
+  <g stroke="url(#r-beam)" stroke-width="2.5" fill="none">
+    <path d="M100 375h230"/>
+  </g>
+
+  <!-- router core -->
+  <g>
+    <rect x="286" y="291" width="168" height="168" rx="28" fill="#07080C" stroke="url(#r-gold)" stroke-width="2.5"/>
+    <rect x="286" y="291" width="168" height="168" rx="28" fill="none" stroke="#60A5FA" stroke-opacity="0.22" stroke-width="8"/>
+    <g stroke="url(#r-gold)" stroke-width="3.5" fill="none" stroke-linecap="round">
+      <path d="M330 375h44"/><path d="M374 375l-18-18"/><path d="M374 375l-18 18"/>
+      <path d="M356 331v88"/>
+    </g>
+  </g>
+
+  <!-- fan-out beams -->
+  <g stroke="url(#r-gold)" stroke-opacity="0.5" stroke-width="1.6" fill="none">
+    <path d="M454 375C600 375 640 150 800 150"/>
+    <path d="M454 375C600 375 640 262 800 262"/>
+    <path d="M454 375h346"/>
+    <path d="M454 375C600 375 640 488 800 488"/>
+    <path d="M454 375C600 375 640 600 800 600"/>
+  </g>
+
+  <!-- provider lanes -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" letter-spacing="2">
+    <g fill="#07080C" stroke="url(#r-gold)" stroke-width="2">
+      <rect x="800" y="118" width="316" height="64" rx="16"/>
+      <rect x="800" y="230" width="316" height="64" rx="16"/>
+      <rect x="800" y="343" width="316" height="64" rx="16"/>
+      <rect x="800" y="456" width="316" height="64" rx="16"/>
+      <rect x="800" y="568" width="316" height="64" rx="16"/>
+    </g>
+    <g fill="#F5E6BC">
+      <text x="836" y="158">OpenAI</text>
+      <text x="836" y="270">Claude</text>
+      <text x="836" y="383">Gemini</text>
+      <text x="836" y="496">OpenRouter</text>
+      <text x="836" y="608">Custom</text>
+    </g>
+    <g fill="#4ADE80">
+      <circle cx="1088" cy="150" r="5"/><circle cx="1088" cy="262" r="5"/>
+      <circle cx="1088" cy="375" r="5"/><circle cx="1088" cy="488" r="5"/>
+      <circle cx="1088" cy="600" r="5"/>
+    </g>
+  </g>
+
+  <text x="72" y="690" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" letter-spacing="3" fill="#E8C266" fill-opacity="0.5">SMART ROUTING · AUTOMATIC FAILOVER</text>
+</svg>

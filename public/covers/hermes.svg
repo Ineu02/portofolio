@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" role="img" aria-label="Neural network fanning out from an agent core">
+  <defs>
+    <linearGradient id="h-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07080C"/>
+      <stop offset="0.55" stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#0A0A0B"/>
+    </linearGradient>
+    <linearGradient id="h-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F0D07A"/>
+      <stop offset="1" stop-color="#B98A2A"/>
+    </linearGradient>
+    <radialGradient id="h-core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF0C0"/>
+      <stop offset="0.45" stop-color="#E8C266"/>
+      <stop offset="1" stop-color="#B98A2A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="h-halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#3B82F6" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="h-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0v40" fill="none" stroke="#E8C266" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="750" fill="url(#h-bg)"/>
+  <rect width="1200" height="750" fill="url(#h-grid)"/>
+  <circle cx="600" cy="375" r="420" fill="url(#h-halo)"/>
+
+  <!-- synapse edges -->
+  <g stroke="url(#h-gold)" stroke-opacity="0.45" stroke-width="1.4" fill="none">
+    <path d="M600 375 240 190"/><path d="M600 375 240 375"/><path d="M600 375 240 560"/>
+    <path d="M600 375 960 190"/><path d="M600 375 960 375"/><path d="M600 375 960 560"/>
+    <path d="M600 375 420 120"/><path d="M600 375 780 120"/>
+    <path d="M600 375 420 630"/><path d="M600 375 780 630"/>
+  </g>
+  <g stroke="#60A5FA" stroke-opacity="0.28" stroke-width="1" fill="none">
+    <path d="M240 190 420 120 780 120 960 190"/>
+    <path d="M240 560 420 630 780 630 960 560"/>
+    <path d="M240 190 240 375 240 560"/>
+    <path d="M960 190 960 375 960 560"/>
+  </g>
+
+  <!-- outer nodes -->
+  <g>
+    <g fill="#0B1220" stroke="url(#h-gold)" stroke-width="2">
+      <circle cx="240" cy="190" r="16"/><circle cx="240" cy="375" r="16"/><circle cx="240" cy="560" r="16"/>
+      <circle cx="960" cy="190" r="16"/><circle cx="960" cy="375" r="16"/><circle cx="960" cy="560" r="16"/>
+    </g>
+    <g fill="#60A5FA" fill-opacity="0.85">
+      <circle cx="420" cy="120" r="7"/><circle cx="780" cy="120" r="7"/>
+      <circle cx="420" cy="630" r="7"/><circle cx="780" cy="630" r="7"/>
+    </g>
+    <g fill="#E8C266">
+      <circle cx="240" cy="190" r="5"/><circle cx="240" cy="375" r="5"/><circle cx="240" cy="560" r="5"/>
+      <circle cx="960" cy="190" r="5"/><circle cx="960" cy="375" r="5"/><circle cx="960" cy="560" r="5"/>
+    </g>
+  </g>
+
+  <!-- agent core -->
+  <circle cx="600" cy="375" r="190" fill="url(#h-core)" opacity="0.5"/>
+  <circle cx="600" cy="375" r="118" fill="none" stroke="#E8C266" stroke-opacity="0.35" stroke-width="1.5" stroke-dasharray="6 10"/>
+  <circle cx="600" cy="375" r="86" fill="#07080C" stroke="url(#h-gold)" stroke-width="2.5"/>
+
+  <!-- glyph: stacked reasoning layers -->
+  <g stroke="url(#h-gold)" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M556 348h88"/><path d="M566 375h68"/><path d="M578 402h44"/>
+  </g>
+  <circle cx="600" cy="375" r="86" fill="none" stroke="#60A5FA" stroke-opacity="0.25" stroke-width="6"/>
+
+  <!-- label -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19" letter-spacing="4">
+    <text x="72" y="90" fill="#E8C266" fill-opacity="0.85">AGENT/HERMES</text>
+    <text x="72" y="690" fill="#60A5FA" fill-opacity="0.55" font-size="15" letter-spacing="3">REASON · PLAN · EXECUTE</text>
+  </g>
+</svg>

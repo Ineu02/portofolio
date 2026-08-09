@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" role="img" aria-label="Block chain with one block flagged during security analysis">
+  <defs>
+    <linearGradient id="s-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A0714"/>
+      <stop offset="0.55" stop-color="#150F28"/>
+      <stop offset="1" stop-color="#08080A"/>
+    </linearGradient>
+    <linearGradient id="s-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F0D07A"/>
+      <stop offset="1" stop-color="#B98A2A"/>
+    </linearGradient>
+    <linearGradient id="s-face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E1636"/>
+      <stop offset="1" stop-color="#0D0A1A"/>
+    </linearGradient>
+    <radialGradient id="s-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A855F7" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#A855F7" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="s-grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0v44" fill="none" stroke="#A855F7" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="750" fill="url(#s-bg)"/>
+  <rect width="1200" height="750" fill="url(#s-grid)"/>
+  <ellipse cx="600" cy="390" rx="440" ry="330" fill="url(#s-glow)"/>
+
+  <!-- chain of blocks: isometric cubes -->
+  <g stroke-width="2">
+    <!-- block 1 -->
+    <g transform="translate(190 330)">
+      <path d="M0 40 70 0 140 40 70 80Z" fill="#2A1F4A" stroke="#A855F7" stroke-opacity="0.55"/>
+      <path d="M0 40v78l70 40V80Z" fill="url(#s-face)" stroke="#A855F7" stroke-opacity="0.45"/>
+      <path d="M140 40v78l-70 40V80Z" fill="#100C20" stroke="#A855F7" stroke-opacity="0.35"/>
+    </g>
+    <!-- block 2 -->
+    <g transform="translate(370 330)">
+      <path d="M0 40 70 0 140 40 70 80Z" fill="#2A1F4A" stroke="#A855F7" stroke-opacity="0.55"/>
+      <path d="M0 40v78l70 40V80Z" fill="url(#s-face)" stroke="#A855F7" stroke-opacity="0.45"/>
+      <path d="M140 40v78l-70 40V80Z" fill="#100C20" stroke="#A855F7" stroke-opacity="0.35"/>
+    </g>
+    <!-- block 3: flagged, gold -->
+    <g transform="translate(550 300)">
+      <path d="M0 40 70 0 140 40 70 80Z" fill="#4A3A12" stroke="url(#s-gold)"/>
+      <path d="M0 40v78l70 40V80Z" fill="#1E1708" stroke="url(#s-gold)"/>
+      <path d="M140 40v78l-70 40V80Z" fill="#120E06" stroke="url(#s-gold)" stroke-opacity="0.7"/>
+      <circle cx="70" cy="80" r="52" fill="none" stroke="#E8C266" stroke-opacity="0.35" stroke-dasharray="5 9"/>
+    </g>
+    <!-- block 4 -->
+    <g transform="translate(730 330)">
+      <path d="M0 40 70 0 140 40 70 80Z" fill="#2A1F4A" stroke="#A855F7" stroke-opacity="0.55"/>
+      <path d="M0 40v78l70 40V80Z" fill="url(#s-face)" stroke="#A855F7" stroke-opacity="0.45"/>
+      <path d="M140 40v78l-70 40V80Z" fill="#100C20" stroke="#A855F7" stroke-opacity="0.35"/>
+    </g>
+    <!-- block 5 -->
+    <g transform="translate(910 330)">
+      <path d="M0 40 70 0 140 40 70 80Z" fill="#2A1F4A" stroke="#A855F7" stroke-opacity="0.4"/>
+      <path d="M0 40v78l70 40V80Z" fill="url(#s-face)" stroke="#A855F7" stroke-opacity="0.32"/>
+      <path d="M140 40v78l-70 40V80Z" fill="#100C20" stroke="#A855F7" stroke-opacity="0.25"/>
+    </g>
+  </g>
+
+  <!-- link hashes -->
+  <g stroke="#E8C266" stroke-opacity="0.4" stroke-width="1.4" stroke-dasharray="4 7">
+    <path d="M330 410h40"/><path d="M510 405h40"/><path d="M690 405h40"/><path d="M870 410h40"/>
+  </g>
+
+  <!-- shield marker over flagged block -->
+  <g transform="translate(620 190)">
+    <path d="M0 0 42 15v34c0 26-18 45-42 52-24-7-42-26-42-52V15Z" fill="#07080C" stroke="url(#s-gold)" stroke-width="2.5"/>
+    <path d="M-16 48 -4 60 18 34" fill="none" stroke="#E8C266" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" letter-spacing="3">
+    <text x="72" y="96" font-size="19" fill="#E8C266" fill-opacity="0.85">SECURITY/RESEARCH</text>
+    <text x="72" y="672" font-size="15" fill="#C4A0F7" fill-opacity="0.6">0x4f2a · reentrancy · severity HIGH</text>
+  </g>
+</svg>

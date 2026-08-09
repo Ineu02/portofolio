@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" role="img" aria-label="Ethereum token network with wallet and automation nodes">
+  <defs>
+    <linearGradient id="w-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#060810"/>
+      <stop offset="0.6" stop-color="#0C1420"/>
+      <stop offset="1" stop-color="#08090B"/>
+    </linearGradient>
+    <linearGradient id="w-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F0D07A"/>
+      <stop offset="1" stop-color="#B98A2A"/>
+    </linearGradient>
+    <radialGradient id="w-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#E8C266" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#E8C266" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="w-grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M50 0H0v50" fill="none" stroke="#3B82F6" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="750" fill="url(#w-bg)"/>
+  <rect width="1200" height="750" fill="url(#w-grid)"/>
+  <ellipse cx="600" cy="375" rx="460" ry="320" fill="url(#w-glow)"/>
+
+  <!-- wallet core -->
+  <g transform="translate(600 375)">
+    <rect x="-88" y="-110" width="176" height="130" rx="18" fill="#07080C" stroke="url(#w-gold)" stroke-width="2.5"/>
+    <rect x="-88" y="-110" width="176" height="130" rx="18" fill="none" stroke="#60A5FA" stroke-opacity="0.18" stroke-width="7"/>
+    <g stroke="url(#w-gold)" stroke-width="3" fill="none" stroke-linecap="round">
+      <path d="M-30 -65h60M-30 -50h60M-30 -35h40"/>
+    </g>
+    <circle cx="0" cy="-45" r="74" fill="none" stroke="#E8C266" stroke-opacity="0.3" stroke-dasharray="6 11"/>
+  </g>
+
+  <!-- token nodes -->
+  <g fill="#0B1220" stroke="url(#w-gold)" stroke-width="2">
+    <circle cx="320" cy="220" r="32"/>
+    <circle cx="880" cy="220" r="32"/>
+    <circle cx="320" cy="530" r="32"/>
+    <circle cx="880" cy="530" r="32"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" letter-spacing="2" fill="#E8C266" text-anchor="middle">
+    <text x="320" y="227">ETH</text>
+    <text x="880" y="227">BSC</text>
+    <text x="320" y="537">BASE</text>
+    <text x="880" y="537">ARB</text>
+  </g>
+
+  <!-- automation hub -->
+  <g transform="translate(600 495)">
+    <rect x="-56" y="-36" width="112" height="72" rx="14" fill="#07080C" stroke="#60A5FA" stroke-width="2"/>
+    <g stroke="#60A5FA" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <circle cx="0" cy="0" r="15"/>
+      <path d="M-10 0l6 6 10-12"/>
+    </g>
+  </g>
+
+  <!-- connection lines -->
+  <g stroke="#E8C266" stroke-opacity="0.4" stroke-width="1.5" stroke-dasharray="5 8" fill="none">
+    <path d="M352 220C440 220 520 260 600 265"/>
+    <path d="M848 220C760 220 680 260 600 265"/>
+    <path d="M352 530C440 500 520 480 600 459"/>
+    <path d="M848 530C760 500 680 480 600 459"/>
+  </g>
+  <g stroke="#60A5FA" stroke-opacity="0.5" stroke-width="1.5" fill="none">
+    <path d="M600 310v113"/>
+  </g>
+
+  <!-- pulse markers -->
+  <g fill="#4ADE80">
+    <circle cx="470" cy="240" r="4"/>
+    <circle cx="730" cy="240" r="4" fill-opacity="0.55"/>
+    <circle cx="470" cy="510" r="4" fill-opacity="0.55"/>
+    <circle cx="730" cy="510" r="4"/>
+  </g>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" letter-spacing="3" fill-opacity="0.75">
+    <text x="72" y="92" font-size="19" fill="#E8C266">WEB3/AUTOMATION</text>
+    <text x="72" y="682" font-size="15" fill="#60A5FA">MONITOR · TRACK · AUTOMATE</text>
+  </g>
+</svg>
