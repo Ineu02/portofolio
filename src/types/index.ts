@@ -203,7 +203,17 @@ export interface Project {
    */
   verified: boolean;
   featured?: boolean;
-  /** Long-form case-study content. */
+}
+
+/**
+ * The long-form half of a project, stored apart from the card fields above.
+ *
+ * The split is a payload decision, not a modelling one: the project grid is a
+ * client component, so every byte of `Project` is compiled into the browser
+ * bundle for anyone who loads the home page. These fields are read only by the
+ * case-study route, which renders on the server — see `src/lib/project-details.ts`.
+ */
+export interface ProjectDetail {
   overview: string;
   problem: string;
   solution: string;
@@ -212,6 +222,9 @@ export interface Project {
   /** What exists publicly today, stated plainly. */
   currentStatus: string;
 }
+
+/** A project with its case-study prose attached, as the detail route builds it. */
+export type ProjectWithDetail = Project & ProjectDetail;
 
 export interface Service {
   title: string;

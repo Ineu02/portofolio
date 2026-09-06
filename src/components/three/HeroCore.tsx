@@ -8,12 +8,13 @@ import {
   fibonacciSphere,
   icosphere,
   mapRange,
-  project,
+  projectInto,
   ring,
   rotateYX,
   shade,
   type Light,
   type Mesh,
+  type Projected,
   type Vec3,
 } from '@/lib/scene3d';
 
@@ -87,21 +88,81 @@ interface Quality {
   ringSegments: number;
   /** Upper bound on devicePixelRatio, to cap fill cost on dense screens. */
   maxDpr: number;
+  /** Shortest gap between frames, in ms. 0 follows the display. */
+  minFrameMs: number;
 }
 
 /**
  * Quality tiers by viewport width.
  *
  * Mobile gets a genuinely lighter scene rather than the same scene scaled
- * down: fewer subdivisions, fewer motes, and a DPR cap of 2. Fill rate, not
- * vertex count, is what costs on a phone, so the DPR cap matters more than
- * any of the geometry reductions.
+ * down: fewer subdivisions, fewer motes, a lower resolution, and half the frame
+ * rate. Fill rate, not vertex count, is what costs on a phone, so the DPR cap
+ * matters more than any of the geometry reductions — at 1.5 instead of 2 device
+ * pixels per CSS pixel there are 44% fewer pixels to shade every frame, and the
+ * object is a masked, 70%-opacity decoration behind the headline, which is the
+ * last place on the page where hairline sharpness is worth paying for.
+ *
+ * The frame cap is safe here because nothing in the scene moves quickly: the
+ * ambient yaw is 0.16 rad/s and the pointer lean, the one fast response, does
+ * not exist on a touch device at all.
  */
 function qualityFor(width: number): Quality {
-  if (width < 640) return { detail: 1, motes: 14, ringSegments: 48, maxDpr: 2 };
-  if (width < 1024) return { detail: 1, motes: 20, ringSegments: 64, maxDpr: 2 };
-  return { detail: 2, motes: 26, ringSegments: 90, maxDpr: 2 };
+  if (width < 640)
+    return { detail: 1, motes: 14, ringSegments: 48, maxDpr: 1.5, minFrameMs: 32 };
+  if (width < 1024)
+    return { detail: 1, motes: 20, ringSegments: 64, maxDpr: 2, minFrameMs: 0 };
+  return { detail: 2, motes: 26, ringSegments: 90, maxDpr: 2, minFrameMs: 0 };
 }
+
+/* -------------------------------------------------------------------- */
+/* Colour ramps                                                          */
+/* -------------------------------------------------------------------- */
+
+/**
+ * Number of alpha levels each colour is quantised to.
+ *
+ * Canvas 2D charges per draw call, and every change of `strokeStyle` or
+ * `fillStyle` costs a string allocation plus a CSS colour parse. The scene used
+ * to build a fresh `rgba(...)` string and issue its own `stroke()` or `fill()`
+ * for each of roughly a thousand primitives per frame — sixty thousand parses a
+ * second — when nearly all of them differed only by an alpha step no eye can
+ * resolve. Rounding alpha to one of these levels lets every primitive sharing a
+ * level share one path and one draw call, with the strings built once at module
+ * load.
+ *
+ * Sixteen steps over the widest range in use (0.10–0.85) is a step of 0.047 on
+ * a hairline against a near-black page. The visible cost is nil; the saving is
+ * two orders of magnitude of draw calls.
+ */
+const STEPS = 16;
+
+/** One full turn, hoisted out of the per-node arc calls. */
+const TAU = Math.PI * 2;
+
+/** Pre-built `rgba()` strings for one colour across `lo`..`hi` alpha. */
+function ramp(colour: string, lo: number, hi: number): string[] {
+  return Array.from(
+    { length: STEPS },
+    (_, i) => `rgba(${colour}, ${(lo + ((i + 0.5) / STEPS) * (hi - lo)).toFixed(3)})`
+  );
+}
+
+/** Bucket a 0..1 factor into a ramp index. */
+function step(t: number): number {
+  return t <= 0 ? 0 : t >= 1 ? STEPS - 1 : (t * STEPS) | 0;
+}
+
+/** Line widths for ring segments, quantised alongside their alpha. */
+const RING_WIDTH = Array.from({ length: STEPS }, (_, i) => 0.5 + ((i + 0.5) / STEPS) * 0.9);
+
+const RING_A_COLOUR = ramp(GOLD, 0.62 * 0.12, 0.62);
+const RING_B_COLOUR = ramp(VIOLET, 0.5 * 0.12, 0.5);
+const CORE_FILL = ramp(GOLD, 0.05, 0.35);
+const CORE_EDGE = ramp(GOLD_LIGHT, 0, 0.16);
+const LATTICE_EDGE = ramp(GOLD, 0.04, 0.3);
+const LATTICE_NODE = ramp(GOLD_LIGHT, 0.1, 0.85);
+const MOTE_COLOUR = [ramp(CYAN, 0.05, 0.7), ramp(VIOLET, 0.05, 0.7), ramp(GOLD_LIGHT, 0.05, 0.7)];
 
 export interface HeroCoreProps {
   /** Extra classes for the wrapping element. */
@@ -124,6 +185,30 @@ export function HeroCore({ className }: HeroCoreProps) {
     let motes: Vec3[] = fibonacciSphere(quality.motes, CONFIG.latticeRadius * 1.5);
     let ringA: Vec3[] = ring(CONFIG.latticeRadius * 1.75, quality.ringSegments, 0.42);
     let ringB: Vec3[] = ring(CONFIG.latticeRadius * 2.05, quality.ringSegments, -0.72);
+
+    // Scratch space, rewritten in place every frame rather than reallocated.
+    // Projecting into fresh objects meant several hundred short-lived
+    // allocations per frame, tens of thousands a second, which is enough
+    // garbage to turn into periodic collection pauses on a phone.
+    const blank = (): Projected => ({ x: 0, y: 0, depth: 0, scale: 0 });
+    let projectedLattice: Projected[] = lattice.vertices.map(blank);
+    let projectedRingA: Projected[] = ringA.map(blank);
+    let projectedRingB: Projected[] = ringB.map(blank);
+    const scratch: Projected[] = [blank(), blank(), blank()];
+
+    // Flat coordinate lists, one per alpha level, refilled each frame. Every
+    // primitive that lands in the same level is drawn by a single path and a
+    // single canvas call — see the note on STEPS above.
+    const makeBuckets = () => Array.from({ length: STEPS }, (): number[] => []);
+    const segBuckets = makeBuckets();
+    const coreBuckets = makeBuckets();
+    const edgeBuckets = makeBuckets();
+    const nodeBuckets = makeBuckets();
+    const clear = (buckets: number[][]) => {
+      // Truncating keeps the backing capacity, so after the first few frames
+      // the refill does not allocate either.
+      for (const bucket of buckets) bucket.length = 0;
+    };
 
     // Live state. Targets are set by input; the rendered values chase them.
     let pointerTargetX = 0;
@@ -164,6 +249,29 @@ export function HeroCore({ className }: HeroCoreProps) {
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
+
+      // Tier first, then the DPR it implies. Reading the cap before updating
+      // the tier would size the backing store from the width we just left,
+      // which on a phone rotated to landscape meant the mobile cap survived
+      // into the desktop scene for a frame.
+      const nextQuality = qualityFor(window.innerWidth);
+      const rebuild =
+        nextQuality.detail !== quality.detail || nextQuality.motes !== quality.motes;
+      quality = nextQuality;
+
+      // Rebuild geometry if the breakpoint changed — rotating a phone should
+      // get the tier appropriate to the new width, not keep the old one.
+      if (rebuild) {
+        lattice = icosphere(CONFIG.latticeRadius, quality.detail);
+        core = icosphere(CONFIG.coreRadius, 1);
+        motes = fibonacciSphere(quality.motes, CONFIG.latticeRadius * 1.5);
+        ringA = ring(CONFIG.latticeRadius * 1.75, quality.ringSegments, 0.42);
+        ringB = ring(CONFIG.latticeRadius * 2.05, quality.ringSegments, -0.72);
+        projectedLattice = lattice.vertices.map(blank);
+        projectedRingA = ringA.map(blank);
+        projectedRingB = ringB.map(blank);
+      }
+
       const dpr = Math.min(window.devicePixelRatio || 1, quality.maxDpr);
       width = rect.width;
       height = rect.height;
@@ -172,18 +280,6 @@ export function HeroCore({ className }: HeroCoreProps) {
       // Reset before scaling: setTransform is absolute, so repeated resizes
       // cannot compound the DPR scale the way a bare scale() call would.
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      // Rebuild geometry if the breakpoint changed — rotating a phone should
-      // get the tier appropriate to the new width, not keep the old one.
-      const nextQuality = qualityFor(window.innerWidth);
-      if (nextQuality.detail !== quality.detail || nextQuality.motes !== quality.motes) {
-        quality = nextQuality;
-        lattice = icosphere(CONFIG.latticeRadius, quality.detail);
-        core = icosphere(CONFIG.coreRadius, 1);
-        motes = fibonacciSphere(quality.motes, CONFIG.latticeRadius * 1.5);
-        ringA = ring(CONFIG.latticeRadius * 1.75, quality.ringSegments, 0.42);
-        ringB = ring(CONFIG.latticeRadius * 2.05, quality.ringSegments, -0.72);
-      }
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -207,10 +303,14 @@ export function HeroCore({ className }: HeroCoreProps) {
     /**
      * Draw one frame.
      *
-     * Order matters and is deliberate: far ring, lattice back half, solid
-     * core, lattice front half, near ring, motes. Painting back-to-front is
-     * what produces the sense that the rings pass behind the object, and it is
-     * the cheapest correct answer without a depth buffer.
+     * Everything is composited additively, so unlike a conventional painter's
+     * algorithm the order primitives are submitted in has no effect on the
+     * result — addition commutes. That is what licenses the batching below:
+     * primitives are grouped by how bright they are rather than by how far away
+     * they are, and each group is drawn by one path and one canvas call. The
+     * pass-behind illusion survives because it was never coming from the paint
+     * order; it comes from depth-dimming each primitive individually, which
+     * still happens.
      */
     const draw = (time: number) => {
       const dt = lastTime === 0 ? 0.016 : Math.min((time - lastTime) / 1000, 0.05);
@@ -239,137 +339,159 @@ export function HeroCore({ className }: HeroCoreProps) {
         -pointerY * CONFIG.maxLean +
         scrollValue * 0.35;
       const bob = reduced ? 0 : Math.sin(elapsed * 0.5) * height * 0.012;
+      const originY = cy + bob;
 
       ctx.clearRect(0, 0, width, height);
       ctx.globalCompositeOperation = 'lighter';
 
-      const toScreen = (v: Vec3) => {
-        const r = rotateYX(v, yaw, pitch);
-        const p = project(r, CONFIG.cameraDistance, fov, cx, cy + bob);
-        return { r, p };
-      };
+      const toScreen = (v: Vec3, out: Projected) =>
+        projectInto(rotateYX(v, yaw, pitch), CONFIG.cameraDistance, fov, cx, originY, out);
 
       // --- Orbital rings -------------------------------------------------
-      // Drawn as individual segments so each can be dimmed by its own depth.
-      // A single stroked path would have to share one alpha and would lose the
-      // pass-behind illusion entirely.
-      const drawRing = (points: Vec3[], colour: string, base: number) => {
-        for (let i = 0; i < points.length; i += 1) {
-          const from = toScreen(points[i]);
-          const to = toScreen(points[(i + 1) % points.length]);
-          const depth = (from.p.depth + to.p.depth) / 2;
-          const alpha =
-            base *
-            mapRange(depth, CONFIG.cameraDistance + 2, CONFIG.cameraDistance - 2, 0.12, 1);
-          ctx.strokeStyle = `rgba(${colour}, ${alpha})`;
-          ctx.lineWidth = mapRange(depth, CONFIG.cameraDistance + 2, CONFIG.cameraDistance - 2, 0.5, 1.4);
+      // Each point is projected once and used by the two segments that meet
+      // there; the previous version projected both endpoints of every segment,
+      // doing the whole ring's worth of trigonometry twice.
+      const drawRing = (points: Vec3[], projected: Projected[], colours: string[]) => {
+        for (let i = 0; i < points.length; i += 1) toScreen(points[i], projected[i]);
+        clear(segBuckets);
+
+        for (let i = 0; i < projected.length; i += 1) {
+          const from = projected[i];
+          const to = projected[(i + 1) % projected.length];
+          const depth = (from.depth + to.depth) / 2;
+          const level = step(
+            mapRange(depth, CONFIG.cameraDistance + 2, CONFIG.cameraDistance - 2, 0, 1)
+          );
+          segBuckets[level].push(from.x, from.y, to.x, to.y);
+        }
+
+        for (let level = 0; level < STEPS; level += 1) {
+          const seg = segBuckets[level];
+          if (seg.length === 0) continue;
+          ctx.strokeStyle = colours[level];
+          ctx.lineWidth = RING_WIDTH[level];
           ctx.beginPath();
-          ctx.moveTo(from.p.x, from.p.y);
-          ctx.lineTo(to.p.x, to.p.y);
+          for (let i = 0; i < seg.length; i += 4) {
+            ctx.moveTo(seg[i], seg[i + 1]);
+            ctx.lineTo(seg[i + 2], seg[i + 3]);
+          }
           ctx.stroke();
         }
       };
 
-      drawRing(ringB, VIOLET, 0.5);
-      drawRing(ringA, GOLD, 0.62);
+      drawRing(ringB, projectedRingB, RING_B_COLOUR);
+      drawRing(ringA, projectedRingA, RING_A_COLOUR);
 
       // --- Solid core ----------------------------------------------------
-      // Back-face culled and painted farthest-first. Culling roughly halves
-      // the fill work and, more importantly, stops rear faces from lightening
-      // front ones through the additive blend.
-      const coreFaces = core.faces
-        .map((f) => {
-          const a = rotateYX(core.vertices[f.a], yaw, pitch);
-          const b = rotateYX(core.vertices[f.b], yaw, pitch);
-          const c = rotateYX(core.vertices[f.c], yaw, pitch);
-          const normal = faceNormal(a, b, c);
-          const depth = CONFIG.cameraDistance - (a[2] + b[2] + c[2]) / 3;
-          return { a, b, c, normal, depth };
-        })
-        .filter((f) => f.normal[2] > -0.05)
-        .sort((p, q) => q.depth - p.depth);
+      // Back-face culled. Culling roughly halves the fill work and, more
+      // importantly, stops rear faces from lightening front ones through the
+      // additive blend. The depth sort the previous version did before painting
+      // has been dropped: with `lighter` the accumulated result is the same
+      // whatever order the faces arrive in, so it was eighty comparisons a
+      // frame buying nothing.
+      clear(coreBuckets);
 
-      for (const f of coreFaces) {
-        const light = shade(f.normal, KEY_LIGHT, FILL_LIGHT);
-        const pa = project(f.a, CONFIG.cameraDistance, fov, cx, cy + bob);
-        const pb = project(f.b, CONFIG.cameraDistance, fov, cx, cy + bob);
-        const pc = project(f.c, CONFIG.cameraDistance, fov, cx, cy + bob);
+      for (const f of core.faces) {
+        const a = rotateYX(core.vertices[f.a], yaw, pitch);
+        const b = rotateYX(core.vertices[f.b], yaw, pitch);
+        const c = rotateYX(core.vertices[f.c], yaw, pitch);
+        const normal = faceNormal(a, b, c);
+        if (normal[2] <= -0.05) continue;
+
         // Dark metal that only picks up gold where the key light lands, so the
         // surface reads as brushed metal rather than as a glowing solid.
-        const warmth = Math.pow(light, 1.9);
-        ctx.fillStyle = `rgba(${GOLD}, ${0.05 + warmth * 0.30})`;
+        const warmth = Math.pow(shade(normal, KEY_LIGHT, FILL_LIGHT), 1.9);
+        const pa = projectInto(a, CONFIG.cameraDistance, fov, cx, originY, scratch[0]);
+        const pb = projectInto(b, CONFIG.cameraDistance, fov, cx, originY, scratch[1]);
+        const pc = projectInto(c, CONFIG.cameraDistance, fov, cx, originY, scratch[2]);
+        coreBuckets[step(warmth)].push(pa.x, pa.y, pb.x, pb.y, pc.x, pc.y);
+      }
+
+      ctx.lineWidth = 0.6;
+      for (let level = 0; level < STEPS; level += 1) {
+        const tri = coreBuckets[level];
+        if (tri.length === 0) continue;
         ctx.beginPath();
-        ctx.moveTo(pa.x, pa.y);
-        ctx.lineTo(pb.x, pb.y);
-        ctx.lineTo(pc.x, pc.y);
-        ctx.closePath();
+        for (let i = 0; i < tri.length; i += 6) {
+          ctx.moveTo(tri[i], tri[i + 1]);
+          ctx.lineTo(tri[i + 2], tri[i + 3]);
+          ctx.lineTo(tri[i + 4], tri[i + 5]);
+          ctx.closePath();
+        }
+        ctx.fillStyle = CORE_FILL[level];
         ctx.fill();
-        ctx.strokeStyle = `rgba(${GOLD_LIGHT}, ${warmth * 0.16})`;
-        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = CORE_EDGE[level];
         ctx.stroke();
       }
 
       // --- Wireframe lattice ---------------------------------------------
-      const projectedLattice = lattice.vertices.map((v) => toScreen(v));
+      for (let i = 0; i < lattice.vertices.length; i += 1) {
+        toScreen(lattice.vertices[i], projectedLattice[i]);
+      }
 
+      const latticeFar = CONFIG.cameraDistance + CONFIG.latticeRadius;
+      const latticeNear = CONFIG.cameraDistance - CONFIG.latticeRadius;
+
+      clear(edgeBuckets);
       for (const e of lattice.edges) {
         const from = projectedLattice[e.a];
         const to = projectedLattice[e.b];
-        const depth = (from.p.depth + to.p.depth) / 2;
-        const alpha = mapRange(
-          depth,
-          CONFIG.cameraDistance + CONFIG.latticeRadius,
-          CONFIG.cameraDistance - CONFIG.latticeRadius,
-          0.04,
-          0.30
-        );
-        ctx.strokeStyle = `rgba(${GOLD}, ${alpha})`;
-        ctx.lineWidth = 0.7;
+        const depth = (from.depth + to.depth) / 2;
+        const level = step(mapRange(depth, latticeFar, latticeNear, 0, 1));
+        edgeBuckets[level].push(from.x, from.y, to.x, to.y);
+      }
+
+      ctx.lineWidth = 0.7;
+      for (let level = 0; level < STEPS; level += 1) {
+        const seg = edgeBuckets[level];
+        if (seg.length === 0) continue;
+        ctx.strokeStyle = LATTICE_EDGE[level];
         ctx.beginPath();
-        ctx.moveTo(from.p.x, from.p.y);
-        ctx.lineTo(to.p.x, to.p.y);
+        for (let i = 0; i < seg.length; i += 4) {
+          ctx.moveTo(seg[i], seg[i + 1]);
+          ctx.lineTo(seg[i + 2], seg[i + 3]);
+        }
         ctx.stroke();
       }
 
       // Lattice nodes. Radius scales with the perspective divisor, so near
       // nodes are genuinely larger rather than merely brighter.
-      for (const item of projectedLattice) {
-        const depth = item.p.depth;
-        const alpha = mapRange(
-          depth,
-          CONFIG.cameraDistance + CONFIG.latticeRadius,
-          CONFIG.cameraDistance - CONFIG.latticeRadius,
-          0.10,
-          0.85
-        );
-        const radius = Math.max(0.6, item.p.scale * 0.006);
-        ctx.fillStyle = `rgba(${GOLD_LIGHT}, ${alpha})`;
+      clear(nodeBuckets);
+      for (const p of projectedLattice) {
+        const level = step(mapRange(p.depth, latticeFar, latticeNear, 0, 1));
+        nodeBuckets[level].push(p.x, p.y, Math.max(0.6, p.scale * 0.006));
+      }
+
+      for (let level = 0; level < STEPS; level += 1) {
+        const dot = nodeBuckets[level];
+        if (dot.length === 0) continue;
+        ctx.fillStyle = LATTICE_NODE[level];
         ctx.beginPath();
-        ctx.arc(item.p.x, item.p.y, radius, 0, Math.PI * 2);
+        for (let i = 0; i < dot.length; i += 3) {
+          const radius = dot[i + 2];
+          // Move to the circle's own start point first: without this the arcs
+          // would be joined by straight lines and filled as one blob.
+          ctx.moveTo(dot[i] + radius, dot[i + 1]);
+          ctx.arc(dot[i], dot[i + 1], radius, 0, TAU);
+        }
         ctx.fill();
       }
 
       // --- Orbiting motes -------------------------------------------------
       // Each mote rides its own slow orbit, offset by index so they never
-      // parade in lockstep.
+      // parade in lockstep. Left unbatched: there are only a dozen or two, and
+      // the three colours would need three sets of buckets to group.
       for (let i = 0; i < motes.length; i += 1) {
-        const base = motes[i];
         const phase = elapsed * 0.22 + i * 1.7;
         const wobble = Math.sin(phase) * 0.12;
-        const orbited = rotateYX(base, phase * 0.35, wobble);
-        const { p } = toScreen(orbited);
-        const alpha = mapRange(
-          p.depth,
-          CONFIG.cameraDistance + 2.4,
-          CONFIG.cameraDistance - 2.4,
-          0.05,
-          0.7
+        const p = toScreen(rotateYX(motes[i], phase * 0.35, wobble), scratch[0]);
+        const level = step(
+          mapRange(p.depth, CONFIG.cameraDistance + 2.4, CONFIG.cameraDistance - 2.4, 0, 1)
         );
         const radius = Math.max(0.7, p.scale * 0.0075);
-        const colour = i % 3 === 0 ? CYAN : i % 3 === 1 ? VIOLET : GOLD_LIGHT;
-        ctx.fillStyle = `rgba(${colour}, ${alpha})`;
+        ctx.fillStyle = MOTE_COLOUR[i % 3][level];
         ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, radius, 0, TAU);
         ctx.fill();
       }
 
@@ -377,8 +499,12 @@ export function HeroCore({ className }: HeroCoreProps) {
     };
 
     const loop = (time: number) => {
-      draw(time);
       frame = window.requestAnimationFrame(loop);
+      // Frame cap for the small-screen tier. Skipping the draw rather than the
+      // callback keeps scheduling aligned with the display, so the frames that
+      // do render still land on a vsync boundary instead of drifting across it.
+      if (quality.minFrameMs > 0 && time - lastTime < quality.minFrameMs) return;
+      draw(time);
     };
 
     resize();

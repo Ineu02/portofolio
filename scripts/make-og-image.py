@@ -62,12 +62,34 @@ def load(paths, size):
             return ImageFont.truetype(p, size)
         except OSError:
             continue
-    return ImageFont.load_default()
+    raise SystemExit(
+        f"none of these fonts could be opened at size {size}: {paths}\n"
+        "Install one, or add a path for this platform to the lists below. "
+        "Falling back to ImageFont.load_default() was the old behaviour and it "
+        "is worse than failing: that face is a fixed ~11px bitmap, so it "
+        "silently ignores every size here and writes a card nobody can read."
+    )
 
 
-SERIF = ["/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"]
-SANS = ["/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
-MONO = ["/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"]
+# Font candidates, tried in order; first one that opens wins.
+#
+# DejaVu leads because the committed card was drawn with it, so regenerating on a
+# machine that has it reproduces the same typography. The Windows paths are the
+# fallback for a machine without DejaVu — Georgia Bold, Segoe UI, and Consolas
+# are the closest stock equivalents, and a card redrawn with them is a slightly
+# different but coherent design rather than a broken one.
+SERIF = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
+    "C:/Windows/Fonts/georgiab.ttf",
+]
+SANS = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+]
+MONO = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    "C:/Windows/Fonts/consola.ttf",
+]
 
 f_name = load(SERIF, 78)
 f_head = load(SERIF, 52)
@@ -82,7 +104,7 @@ draw.line([(M, y), (M + 54, y)], fill=(212, 175, 55), width=3)
 draw.text((M + 70, y - 12), "INDEPENDENT", font=f_mono, fill=(150, 150, 150))
 y += 44
 
-draw.text((M, y), "Kenzi Aridzky", font=f_name, fill=(255, 255, 255))
+draw.text((M, y), "Bandidoz", font=f_name, fill=(255, 255, 255))
 y += 104
 
 # Headline, drawn per-glyph so it carries the gold gradient.
@@ -102,8 +124,13 @@ for line in [
     y += 38
 
 # Footer: site + tech, separated by a hairline.
+#
+# Keep this host in step with SITE_URL in src/lib/site.ts. It is baked into the
+# PNG, so a domain move means re-running this script — the previous domain sat
+# printed on the share card for every link shared after the site had already
+# moved off it.
 draw.line([(M, H - 108), (W - M, H - 108)], fill=(255, 255, 255, 26), width=1)
-draw.text((M, H - 78), "bandidoz.xyz", font=f_mono, fill=(212, 175, 55))
+draw.text((M, H - 78), "bandidoz.tech", font=f_mono, fill=(212, 175, 55))
 
 tail = "Python · TypeScript · Solidity · Rust"
 draw.text(

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { useMediaQuery } from '@/lib/hooks';
 
 /**
  * Site-wide ambient background.
@@ -48,6 +49,8 @@ export function AmbientBackground() {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll();
+  // Drives the mote count below; see the note at the render site.
+  const wide = useMediaQuery('(min-width: 640px)');
 
   // The grid drifts a little as the page scrolls, which gives parallax against
   // the content without moving enough to be read as its own animation.
@@ -68,36 +71,60 @@ export function AmbientBackground() {
   // Pointer position feeds a CSS variable rather than React state: this updates
   // on every mouse move, and re-rendering the tree at that rate would be
   // wasteful when only a gradient's centre needs to change.
+  //
+  // The loop is demand-driven in both directions. It is never started at all
+  // unless the layer it drives is actually on screen and there is a real
+  // pointer to follow, and once started it stops again as soon as the wash has
+  // caught up. The previous version held an unconditional rAF chain open for
+  // the lifetime of the page: on a phone that was sixty frames a second spent
+  // repositioning a gradient inside a `hidden md:block` layer nobody could see,
+  // and on a desktop it kept paying for frames while the pointer sat still,
+  // which is most of the time someone spends reading.
   useEffect(() => {
     if (reduced) return;
     const el = ref.current;
     if (!el) return;
+
+    // Same two conditions the highlight layer itself is gated on below.
+    if (!window.matchMedia('(min-width: 768px) and (pointer: fine)').matches) return;
+
     let frame = 0;
     let x = 50;
     let y = 50;
     let targetX = 50;
     let targetY = 50;
 
-    const onMove = (e: PointerEvent) => {
-      targetX = (e.clientX / window.innerWidth) * 100;
-      targetY = (e.clientY / window.innerHeight) * 100;
-    };
-
     const tick = () => {
+      const dx = targetX - x;
+      const dy = targetY - y;
+
+      // Converged. Release the loop rather than idling on it; the next pointer
+      // move restarts it. The threshold is a twentieth of a percent of the
+      // viewport, far below one pixel of gradient travel.
+      if (Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
+        frame = 0;
+        return;
+      }
+
       // Ease toward the pointer so the wash lags slightly behind it, which
       // reads as a heavy light source rather than a cursor-following blob.
-      x += (targetX - x) * 0.045;
-      y += (targetY - y) * 0.045;
-      el.style.setProperty('--pointer-x', `${x}%`);
-      el.style.setProperty('--pointer-y', `${y}%`);
+      x += dx * 0.045;
+      y += dy * 0.045;
+      el.style.setProperty('--pointer-x', `${x.toFixed(2)}%`);
+      el.style.setProperty('--pointer-y', `${y.toFixed(2)}%`);
       frame = window.requestAnimationFrame(tick);
     };
 
+    const onMove = (e: PointerEvent) => {
+      targetX = (e.clientX / window.innerWidth) * 100;
+      targetY = (e.clientY / window.innerHeight) * 100;
+      if (!frame) frame = window.requestAnimationFrame(tick);
+    };
+
     window.addEventListener('pointermove', onMove, { passive: true });
-    frame = window.requestAnimationFrame(tick);
     return () => {
       window.removeEventListener('pointermove', onMove);
-      window.cancelAnimationFrame(frame);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, [reduced]);
 
@@ -163,12 +190,17 @@ export function AmbientBackground() {
       />
 
       {/* Drifting motes. Half are dropped below `sm` — each is its own animated
-          layer, and a phone is already carrying the hero canvas. */}
+          layer, and a phone is already carrying the hero canvas.
+
+          The cut is made in JavaScript rather than with `hidden sm:block`
+          because a hidden element is still an element: framer-motion goes on
+          driving an infinite animation on a node with `display: none`, so the
+          CSS version cost a phone nine animations it could not display. */}
       {!reduced &&
-        MOTES.map((m, i) => (
+        MOTES.filter((_, i) => wide || i % 2 === 0).map((m) => (
           <motion.span
             key={m.id}
-            className={`absolute rounded-full bg-gold ${i % 2 === 1 ? 'hidden sm:block' : ''}`}
+            className="absolute rounded-full bg-gold"
             style={{
               left: `${m.left}%`,
               top: `${m.top}%`,

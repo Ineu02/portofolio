@@ -251,7 +251,12 @@ export interface Projected {
 }
 
 /**
- * Perspective-project a camera-space point onto the canvas.
+ * Perspective-project a camera-space point into an existing `Projected`.
+ *
+ * Reach for `project` below by default. This variant exists for the render
+ * loop, which projects several hundred points per frame and would otherwise
+ * spend a meaningful part of its budget producing short-lived objects for the
+ * collector to take back.
  *
  * `distance` is the camera's distance from the origin along +Z. Points at or
  * behind the camera are clamped to a small positive depth instead of being
@@ -259,6 +264,25 @@ export interface Projected {
  * cheaper and steadier than a near-plane clip that could pop vertices in and
  * out during rotation.
  */
+export function projectInto(
+  v: Vec3,
+  distance: number,
+  fov: number,
+  cx: number,
+  cy: number,
+  out: Projected
+): Projected {
+  const depth = distance - v[2];
+  const safe = Math.max(depth, 0.001);
+  const scale = fov / safe;
+  out.x = cx + v[0] * scale;
+  out.y = cy - v[1] * scale;
+  out.depth = depth;
+  out.scale = scale;
+  return out;
+}
+
+/** Perspective-project a camera-space point onto the canvas. */
 export function project(
   v: Vec3,
   distance: number,
@@ -266,10 +290,7 @@ export function project(
   cx: number,
   cy: number
 ): Projected {
-  const depth = distance - v[2];
-  const safe = Math.max(depth, 0.001);
-  const scale = fov / safe;
-  return { x: cx + v[0] * scale, y: cy - v[1] * scale, depth, scale };
+  return projectInto(v, distance, fov, cx, cy, { x: 0, y: 0, depth: 0, scale: 0 });
 }
 
 /* ------------------------------------------------------------------ */

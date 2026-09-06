@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 /**
  * Robots directives for crawlers.
@@ -13,6 +14,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: '/api/',
     },
-    sitemap: 'https://bandidoz.xyz/sitemap.xml',
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

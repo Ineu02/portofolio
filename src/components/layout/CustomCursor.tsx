@@ -22,22 +22,40 @@ export function CustomCursor() {
   const ringY = useSpring(dotY, { stiffness: 350, damping: 28 });
 
   useEffect(() => {
-    // Only enable on devices with a fine pointer and no reduced-motion pref.
-    const finePointer = window.matchMedia('(pointer: fine)').matches;
+    // Only enable where the cursor is actually drawn. Both elements below are
+    // `hidden lg:block`, so the width check belongs here too — without it a
+    // fine-pointer tablet ran the listeners and both springs to move two
+    // elements CSS had already hidden.
+    const supported = window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!finePointer || reduced) return;
+    if (!supported || reduced) return;
 
     setEnabled(true);
     document.documentElement.classList.add('cursor-none-desktop');
 
+    // `visible` only ever goes true once per pointer entry, so the flag keeps
+    // the state setter out of the move handler; calling it on every mouse move
+    // asked React to re-check the tree at pointer rate to arrive at the value
+    // it already held.
+    let shown = false;
+    let lastTarget: EventTarget | null = null;
+
     const move = (e: MouseEvent) => {
       dotX.set(e.clientX);
       dotY.set(e.clientY);
-      setVisible(true);
+      if (!shown) {
+        shown = true;
+        setVisible(true);
+      }
     };
 
     // Grow the ring when hovering clickable elements.
     const over = (e: MouseEvent) => {
+      // `mouseover` fires on every element boundary the pointer crosses, and
+      // `closest` walks the ancestor chain each time. Re-entering the same node
+      // cannot change the answer, so skip the walk for it.
+      if (e.target === lastTarget) return;
+      lastTarget = e.target;
       const target = e.target as HTMLElement;
       setHovering(
         Boolean(
@@ -46,10 +64,13 @@ export function CustomCursor() {
       );
     };
 
-    const leave = () => setVisible(false);
+    const leave = () => {
+      shown = false;
+      setVisible(false);
+    };
 
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseover', over);
+    window.addEventListener('mousemove', move, { passive: true });
+    window.addEventListener('mouseover', over, { passive: true });
     document.addEventListener('mouseleave', leave);
 
     return () => {

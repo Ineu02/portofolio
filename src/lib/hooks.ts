@@ -3,19 +3,30 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Returns the current vertical scroll position in pixels.
- * Useful for scroll-driven animations and effects.
+ * Tracks a media query from JavaScript.
+ *
+ * Returns `false` on the server and on the very first client render, so the
+ * markup React hydrates always matches what was sent. Callers therefore need to
+ * treat `false` as "the narrow case, or not known yet" and use it to *add*
+ * things once it turns true, never to remove things that were server-rendered.
+ *
+ * Exists because a CSS-only `hidden sm:block` still leaves the element in the
+ * tree: framer-motion keeps driving animations on nodes that are
+ * `display: none`, so a phone was paying for two dozen animations it could not
+ * show. Deciding the count in JavaScript means those nodes are never created.
  */
-export function useScrollPosition(): number {
-  const [scrollY, setScrollY] = useState(0);
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    const mq = window.matchMedia(query);
+    setMatches(mq.matches);
+    const onChange = (event: MediaQueryListEvent) => setMatches(event.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [query]);
 
-  return scrollY;
+  return matches;
 }
 
 /**

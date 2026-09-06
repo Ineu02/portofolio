@@ -24,7 +24,6 @@ import {
   Linkedin,
   Twitter,
   Send,
-  Globe,
   Mail,
   Bot,
   ShieldCheck,
@@ -48,16 +47,29 @@ import type {
   Testimonial,
   BlogPost,
 } from '@/types';
+import { SITE_URL } from '@/lib/site';
 
 export const profile = {
-  name: 'Kenzi Aridzky',
-  firstName: 'Kenzi',
+  /**
+   * Display identity, and the only place it is spelled out.
+   *
+   * `Bandidoz` is the handle the whole presence already runs on — the domain,
+   * the LinkedIn slug — so the site now uses it rather than a separate legal
+   * name. Two things are derived from this string and will follow it
+   * automatically: the monogram in the navbar and loading screen
+   * (`name.split(' ').map(n => n[0]).join('')`, so a one-word name yields `B`),
+   * and `metadata.title.template` / `authors` / `creator` / `openGraph.siteName`
+   * in `app/layout.tsx`. Restoring a surname here is enough to bring the
+   * two-letter monogram back with it.
+   */
+  name: 'Bandidoz',
+  firstName: 'Bandidoz',
   role: 'Blockchain Security Researcher | AI Agent Developer | Web3 Builder | Bug Hunter | Airdrop Hunter',
   tagline: 'Building Secure Web3 Infrastructure with AI',
   headlineWords: ['infrastructure', 'AI agents', 'security tools', 'automation'],
   location: 'Indonesia',
   email: 'kenzi5942@gmail.com',
-  website: 'https://bandidoz.xyz',
+  website: SITE_URL,
   resumeUrl: '/resume.pdf',
   /**
    * Flip to `true` only once `public/resume.pdf` actually exists. The hero
@@ -82,6 +94,16 @@ export const navLinks: NavLink[] = [
   { label: 'Contact', href: '#contact' },
 ];
 
+/**
+ * Outbound links to profiles elsewhere.
+ *
+ * Every entry must be a destination that is *not* this site. A "Website" entry
+ * pointing at `bandidoz.xyz` used to sit here; that host is now dead, and
+ * repointing it at the current origin would only have produced a link, rendered
+ * in the footer of every page, to the page the visitor is already reading. The
+ * site's own origin lives in `@/lib/site` and is consumed by metadata, not by a
+ * link list.
+ */
 export const socialLinks: SocialLink[] = [
   { label: 'GitHub', href: 'https://github.com/Ineu02', icon: Github },
   {
@@ -91,7 +113,6 @@ export const socialLinks: SocialLink[] = [
   },
   { label: 'Twitter', href: 'https://x.com/maxwelxyz', icon: Twitter },
   { label: 'Telegram', href: 'https://t.me/chandrairawa', icon: Send },
-  { label: 'Website', href: 'https://bandidoz.xyz', icon: Globe },
   { label: 'Email', href: 'mailto:kenzi5942@gmail.com', icon: Mail },
 ];
 
@@ -252,19 +273,19 @@ export const experience: ExperienceItem[] = [
 /**
  * Public repositories for the "Open Source & Experiments" section.
  *
- * WHAT IS CONFIRMED HERE: the repository names and, from them, the URLs. Kenzi
- * supplied this list directly, so the names are real and each URL follows the
- * one rule that matters — `github.com/Ineu02/<exact-name>`, never a guessed
- * slug and never the profile root.
+ * WHAT IS CONFIRMED HERE: the repository names and, from them, the URLs.
+ * Bandidoz supplied this list directly, so the names are real and each URL
+ * follows the one rule that matters — `github.com/Ineu02/<exact-name>`, never a
+ * guessed slug and never the profile root.
  *
  * WHAT IS NOT CONFIRMED: everything else. Descriptions, primary languages, and
  * publication status could not be read, because GitHub is unreachable from the
  * environment this was built in. Those fields are `null`, and the UI renders
  * "Details pending verification" rather than inventing a plausible sentence.
  *
- * Every entry is `origin: 'unverified'` for one specific reason: Kenzi said
+ * Every entry is `origin: 'unverified'` for one specific reason: Bandidoz said
  * several of these are forks but did not say which. A guess would eventually
- * label someone else's project as his original work, which is the worst
+ * label someone else's project as their original work, which is the worst
  * available outcome — so no entry claims a classification until it is checked.
  * The badge reads "Pending verification" until then, which is accurate for a
  * fork and for original work alike.
@@ -377,10 +398,10 @@ export const repositories: Repository[] = [
  *
  * Every `github` and `demo` is `null`. They previously pointed at
  * `github.com/Ineu02` (a profile root, not a repository) and `bandidoz.xyz`
- * (a homepage, not a deployment), which rendered "Code" and "Live Demo" buttons
- * that did not go where they claimed. Replace a `null` with a specific URL as
- * each repo or deployment goes public, and set `verified: true` only after
- * opening it yourself.
+ * (a homepage, not a deployment — and since dead besides), which rendered
+ * "Code" and "Live Demo" buttons that did not go where they claimed. Replace a
+ * `null` with a specific URL as each repo or deployment goes public, and set
+ * `verified: true` only after opening it yourself.
  *
  * Case-study copy describes design and intent — the parts that are true of the
  * work itself. It deliberately contains no user counts, revenue, transaction
@@ -415,24 +436,6 @@ export const projects: Project[] = [
     caseStudy: '/projects/hermes',
     verified: false,
     featured: true,
-    overview:
-      'Hermes is an agent runtime built around a single idea: an agent is only useful in production if it can remember what it did, recover when a tool fails, and be driven from wherever you already are. It runs as a long-lived service and is operated conversationally through Telegram.',
-    problem:
-      'A raw LLM call forgets everything between requests and has no way to act. Wiring one into a chat interface gets you a demo, not a system: there is no memory across sessions, no retry path when a tool errors, and a single provider outage takes the whole thing down.',
-    solution:
-      'A planning loop sits between the model and its tools. Each turn is persisted to SQLite so context survives restarts, tool calls are dispatched through a registry with explicit schemas, and provider selection sits behind an abstraction so Claude, Gemini, and OpenRouter are interchangeable at runtime.',
-    architecture:
-      'A FastAPI service exposes the agent over HTTP and receives Telegram webhooks. The reasoning loop, tool registry, and provider adapters are separate modules, so a new tool or provider is added without touching the loop. State lives in SQLite; the whole service is containerised for deployment.',
-    features: [
-      'Persistent conversation memory across restarts',
-      'Tool registry with typed schemas and validated arguments',
-      'Multi-provider reasoning with runtime provider selection',
-      'Telegram as the operator interface',
-      'Structured error handling with retry and fallback paths',
-      'Containerised single-service deployment',
-    ],
-    currentStatus:
-      'Running privately. The source is not public and there is no hosted demo, so there is nothing to link here yet — the architecture description above is what I can share.',
   },
   {
     id: '9router',
@@ -452,24 +455,6 @@ export const projects: Project[] = [
     caseStudy: '/projects/9router',
     verified: false,
     featured: true,
-    overview:
-      'A routing layer that sits in front of several LLM providers and exposes one interface to callers. Applications ask for a capability rather than naming a vendor, and the router decides where the request goes.',
-    problem:
-      'Provider SDKs disagree on request shape, streaming format, and error semantics, so switching vendors means touching every call site. Rate limits and outages hit without warning, and a hard-coded provider means an outage upstream becomes an outage in your product.',
-    solution:
-      'One normalised request and response schema, with per-provider adapters translating in and out. Provider health is tracked in Redis so a failing upstream is skipped rather than retried blindly, and requests fall back through a preference order until one succeeds.',
-    architecture:
-      'A Node service handles routing; adapters isolate provider quirks; Redis holds health state and cached responses so repeat prompts avoid a paid round trip. A Next.js dashboard reads that state. Everything runs in containers.',
-    features: [
-      'Single normalised API across multiple providers',
-      'Health-aware routing that skips failing upstreams',
-      'Ordered failover across the provider list',
-      'Response caching in Redis to avoid repeat calls',
-      'Streaming passthrough with a consistent event shape',
-      'Dashboard over live routing state',
-    ],
-    currentStatus:
-      'A working prototype I run locally. It is not deployed publicly and the repository is private, so there is no link to offer yet.',
   },
   {
     id: 'security-research',
@@ -489,22 +474,6 @@ export const projects: Project[] = [
     caseStudy: '/projects/security-research',
     verified: false,
     featured: true,
-    overview:
-      'A standing body of work rather than a shipped product: reading contracts, reproducing known exploit classes in tests, and building a personal catalogue of the patterns that keep recurring.',
-    problem:
-      'Vulnerability write-ups explain what went wrong after the fact, but reading a post-mortem is not the same as understanding the bug well enough to spot it in unfamiliar code. The gap closes only by reproducing the failure yourself.',
-    solution:
-      'Each pattern studied gets a minimal Foundry reproduction — a contract exhibiting the flaw and a test that exploits it. Static analysis with Slither runs first to see what tooling catches, which makes the residue that tooling misses the interesting part.',
-    architecture:
-      'A Foundry workspace of isolated case directories, one per vulnerability class, each with the vulnerable contract, an exploit test, and notes on the root cause and its fix. Python scripts drive batch analysis across the set.',
-    features: [
-      'Reproductions of reentrancy, access-control, and oracle-manipulation classes',
-      'Notes tracing each bug to its root cause and remediation',
-      'Slither baselines showing what static analysis does and does not catch',
-      'Comparison of the same flaw across Solidity versions',
-    ],
-    currentStatus:
-      'Ongoing private research. No findings are published and no public repository exists, so nothing here should be read as a disclosed vulnerability or a completed audit.',
   },
   {
     id: 'web3-toolkit',
@@ -523,23 +492,6 @@ export const projects: Project[] = [
     demo: null,
     caseStudy: '/projects/web3-toolkit',
     verified: false,
-    overview:
-      'A collection of scripts and small services I built for my own use: watching addresses across chains, normalising what comes back, and pushing anything noteworthy to Telegram.',
-    problem:
-      'Watching activity across several chains by hand does not scale. Each chain exposes a different RPC surface, block explorers rate-limit aggressive polling, and the interesting events are buried in routine ones.',
-    solution:
-      'A polling layer per chain normalises responses into one internal event shape, filters run over that stream to decide what matters, and matches are delivered to Telegram. Adding a chain means adding an adapter, not a new pipeline.',
-    architecture:
-      'Python workers poll RPC endpoints on a schedule and write normalised events to a local store. A filter layer evaluates rules against the stream; a small Node service handles Telegram delivery. Components run as separate containers.',
-    features: [
-      'Address monitoring across multiple EVM chains',
-      'Normalised event shape across differing RPC responses',
-      'Rule-based filtering for alert-worthy activity',
-      'Telegram notification delivery',
-      'Backoff and retry against rate-limited endpoints',
-    ],
-    currentStatus:
-      'Private tooling built for my own workflow. Not packaged for release and not open source, so there is no repository to link.',
   },
   {
     id: 'contract-auditor',
@@ -558,23 +510,6 @@ export const projects: Project[] = [
     demo: null,
     caseStudy: '/projects/contract-auditor',
     verified: false,
-    overview:
-      'Tooling that automates the mechanical first pass of a contract review, so manual attention goes to the findings that need judgement rather than to running the same commands each time.',
-    problem:
-      'The opening hours of a review are repetitive: run the analysers, dedupe overlapping findings, sort by severity, and discard the noise. Doing this by hand every time is slow and easy to do inconsistently.',
-    solution:
-      'A pipeline that compiles the target, runs Slither, and normalises findings into one schema. Overlapping detections collapse into a single entry, results group by severity and affected contract, and output is a structured report rather than raw tool logs.',
-    architecture:
-      'A TypeScript orchestrator drives compilation and analysis as discrete stages. Each analyser has an adapter emitting the shared finding schema, so adding a tool does not change the reporting layer. Foundry handles compilation and test execution.',
-    features: [
-      'Automated compile-and-analyse pipeline',
-      'Normalised finding schema across analysers',
-      'Deduplication of overlapping detections',
-      'Grouping by severity and affected contract',
-      'Structured report output for review',
-    ],
-    currentStatus:
-      'Under active development and not released. To be explicit: this is tooling that assists a review — it has not been used to produce any published audit, and no findings from it are disclosed anywhere.',
   },
   {
     id: 'intel-dashboard',
@@ -593,23 +528,6 @@ export const projects: Project[] = [
     demo: null,
     caseStudy: '/projects/intel-dashboard',
     verified: false,
-    overview:
-      'A front end over the monitoring work: rather than reading alerts as they arrive, this presents address activity over time with the context needed to tell routine movement from unusual movement.',
-    problem:
-      'Raw transaction lists are hard to reason about. Block explorers answer "what happened in this transaction" well, but not "how does this address usually behave, and is today different".',
-    solution:
-      'An indexing layer pulls history for watched addresses into local storage, and the interface renders it as time series and activity summaries. Reads hit the local index rather than an RPC endpoint, so exploration is fast and does not exhaust rate limits.',
-    architecture:
-      'A Node indexer fetches and stores history via Ethers.js. A Next.js app queries that store and renders with Chart.js. Indexing and presentation are separate, so the interface never waits on a chain round trip.',
-    features: [
-      'Address activity over time',
-      'Transaction history from a local index',
-      'Charted volume and frequency views',
-      'Multi-address watchlists',
-      'Local indexing to avoid repeated RPC calls',
-    ],
-    currentStatus:
-      'A prototype running locally against my own watchlist. Not deployed publicly and the repository is private. The cover image is concept artwork, not a screenshot of a live product.',
   },
 ];
 
@@ -738,6 +656,16 @@ export const techGroups: TechGroup[] = [
  * purpose: these four destinations are what is actually public right now. Add to
  * it as repositories and deployments go live; do not pad it in the meantime,
  * because a padded proof section undermines exactly what it is meant to prove.
+ *
+ * Two consequences of that rule, both learned the hard way here:
+ *
+ * 1. No entry may point at this site. One used to — `bandidoz.xyz`, described as
+ *    "Personal site and writing" — and proving the page to someone already on
+ *    the page proves nothing. It also claimed writing that does not exist yet;
+ *    every entry in `blogPosts` is still `published: false`.
+ * 2. Destinations have to be re-checked, not assumed. That same entry kept its
+ *    place in the list long after its host stopped answering on 443, so the one
+ *    section built to survive a stranger's scrutiny was shipping a dead link.
  */
 export const proofOfWork: ProofItem[] = [
   {
@@ -748,10 +676,10 @@ export const proofOfWork: ProofItem[] = [
     icon: Github,
   },
   {
-    label: 'bandidoz.xyz',
-    description: 'Personal site and writing.',
-    href: 'https://bandidoz.xyz',
-    icon: Globe,
+    label: 'LinkedIn',
+    description: 'Professional profile and background.',
+    href: 'https://www.linkedin.com/in/bandidoz-x-904720240/',
+    icon: Linkedin,
   },
   {
     label: 'X',

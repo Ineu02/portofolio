@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { projects } from '@/lib/data';
+import { SITE_URL } from '@/lib/site';
 
 /**
  * Generates sitemap.xml for search engines.
@@ -10,7 +11,7 @@ import { projects } from '@/lib/data';
  * six case-study routes that are the only genuinely indexable sub-pages.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://bandidoz.xyz';
+  const base = SITE_URL;
   const now = new Date();
 
   return [

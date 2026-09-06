@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useMediaQuery } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 
 /**
@@ -36,6 +37,7 @@ export function ParticleField({
   className,
 }: ParticleFieldProps) {
   const reduced = useReducedMotion();
+  const wide = useMediaQuery('(min-width: 640px)');
 
   const particles = useMemo(() => {
     const rand = seeded(seed);
@@ -51,6 +53,18 @@ export function ParticleField({
     }));
   }, [count, seed]);
 
+  // Roughly half the field is dropped below `sm`. A phone already carries the
+  // 3D canvas, and at that size the thinner field looks the same anyway.
+  //
+  // The half that goes is removed from the tree rather than hidden with
+  // `hidden sm:block`, because framer-motion keeps ticking an infinite
+  // animation on a `display: none` node: the CSS version had a phone paying for
+  // fifteen animations it could not draw.
+  const visible = useMemo(
+    () => (wide ? particles : particles.filter((_, i) => i % 2 === 0)),
+    [particles, wide]
+  );
+
   if (reduced) return null;
 
   return (
@@ -58,18 +72,10 @@ export function ParticleField({
       aria-hidden
       className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}
     >
-      {particles.map((p, i) => (
+      {visible.map((p) => (
         <motion.span
           key={p.id}
-          className={cn(
-            'absolute rounded-full bg-gold',
-            // Roughly half the field is hidden below `sm`. A phone already
-            // carries the 3D canvas, and each particle is its own animated
-            // compositor layer — cutting the count is the cheapest real saving
-            // available here, and at phone size the thinner field looks the
-            // same anyway.
-            i % 2 === 1 && 'hidden sm:block'
-          )}
+          className="absolute rounded-full bg-gold"
           style={{
             left: `${p.left}%`,
             top: `${p.top}%`,

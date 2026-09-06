@@ -1,10 +1,17 @@
 import type { MetadataRoute } from 'next';
+import { profile } from '@/lib/data';
 
-/** PWA-lite web manifest for installability and theming. */
+/**
+ * PWA-lite web manifest for installability and theming.
+ *
+ * The names come from `profile` rather than being typed out again — this file
+ * held its own copy of the display name, which is how it would quietly keep the
+ * old one after a rename.
+ */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Kenzi Aridzky — Portfolio',
-    short_name: 'Kenzi Aridzky',
+    name: `${profile.name} — Portfolio`,
+    short_name: profile.name,
     description:
       'Blockchain Security Researcher, AI Agent Developer, Bug Hunter, and Web3 Builder.',
     start_url: '/',

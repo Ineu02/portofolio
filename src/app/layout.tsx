@@ -2,10 +2,21 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { profile } from '@/lib/data';
+import { SITE_URL } from '@/lib/site';
 
 /* -------------------------------------------------------------------- */
 /* Fonts — loaded via next/font for zero layout shift & self-hosting     */
 /* -------------------------------------------------------------------- */
+
+/**
+ * Inter and Playfair are left to fetch their variable fonts.
+ *
+ * Pinning them to the four weights the site actually uses was tried and
+ * measured: Google returns byte-identical files either way (Inter's Latin
+ * subset stays 48,432 bytes, Playfair's 38,460), so naming the weights bought
+ * nothing while adding a trap — a weight class added later and not listed here
+ * would be synthesised by the browser into a smeared fake bold.
+ */
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -18,20 +29,28 @@ const playfair = Playfair_Display({
   display: 'swap',
 });
 
+/**
+ * JetBrains Mono is the one family where naming the weights pays.
+ *
+ * Its variable font spans 100–800; clamped to the 400–700 the site uses, the
+ * Latin subset drops from 40,480 to 31,340 bytes. The whole site only ever uses
+ * `font-medium`, `font-semibold`, `font-bold`, and the 400 default — but if a
+ * fifth weight is introduced anywhere, it must be added to this list, or the
+ * browser will synthesise it instead of rendering the real face.
+ */
 const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-mono',
   display: 'swap',
 });
-
-const siteUrl = 'https://bandidoz.xyz';
 
 /**
  * Canonical title and description, shared by the document head, Open Graph, and
  * the Twitter card so all three tell a search result or a shared link the same
  * story. Both describe the work as independent, which is what it is.
  */
-const SITE_TITLE = 'Kenzi — Web3 Security, AI Agents & Blockchain Infrastructure';
+const SITE_TITLE = 'Bandidoz — Web3 Security, AI Agents & Blockchain Infrastructure';
 const SITE_DESCRIPTION =
   'Independent Web3 security researcher and AI engineer building autonomous agents, blockchain infrastructure, security tooling, and Web3 automation systems.';
 
@@ -39,7 +58,7 @@ const SITE_DESCRIPTION =
 /* SEO metadata                                                          */
 /* -------------------------------------------------------------------- */
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
     template: `%s — ${profile.name}`,
@@ -57,12 +76,12 @@ export const metadata: Metadata = {
     'Autonomous AI Agents',
     'LLM Engineering',
   ],
-  authors: [{ name: profile.name, url: siteUrl }],
+  authors: [{ name: profile.name, url: SITE_URL }],
   creator: profile.name,
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: siteUrl,
+    url: SITE_URL,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     siteName: profile.name,
@@ -93,7 +112,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: siteUrl,
+    canonical: SITE_URL,
   },
   manifest: '/manifest.webmanifest',
 };
@@ -115,18 +134,24 @@ function StructuredData() {
     '@type': 'Person',
     name: profile.name,
     jobTitle: profile.role,
-    url: siteUrl,
+    url: SITE_URL,
     email: profile.email,
     address: {
       '@type': 'PostalAddress',
       addressLocality: profile.location,
     },
+    /**
+     * External profiles only. `sameAs` is for other pages that represent the
+     * same person, so the site's own origin does not belong here — that is what
+     * `url` above is for. It previously listed `bandidoz.xyz`, which was both
+     * redundant with `url` and, once that host went down, a dead reference
+     * handed straight to a crawler.
+     */
     sameAs: [
       'https://github.com/Ineu02',
       'https://www.linkedin.com/in/bandidoz-x-904720240/',
       'https://x.com/maxwelxyz',
       'https://t.me/chandrairawa',
-      'https://bandidoz.xyz',
     ],
   };
   return (

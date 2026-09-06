@@ -10,7 +10,7 @@ import {
   Lock,
   ShieldCheck,
 } from 'lucide-react';
-import type { Project, ProjectStatus } from '@/types';
+import type { ProjectStatus, ProjectWithDetail } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { cn, originLabels } from '@/lib/utils';
@@ -35,7 +35,7 @@ const STATUS_STYLES: Record<ProjectStatus, string> = {
  * findings, or benchmarks, because none of those are measurable from what
  * exists, and inventing them is exactly what this page is meant to avoid.
  */
-export function CaseStudy({ project }: { project: Project }) {
+export function CaseStudy({ project }: { project: ProjectWithDetail }) {
   const reduced = useReducedMotion();
 
   const sections = [

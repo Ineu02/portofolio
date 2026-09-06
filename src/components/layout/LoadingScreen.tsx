@@ -4,16 +4,23 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { profile } from '@/lib/data';
 
+/**
+ * Shortest time the overlay stays up. Below this it reads as a flash of
+ * something rather than as an intentional beat.
+ */
+const MIN_HOLD_MS = 260;
+
 /** Never hold the overlay longer than this, even if `load` is slow to fire. */
-const MAX_HOLD_MS = 1200;
+const MAX_HOLD_MS = 700;
 
 /**
  * Brief full-screen overlay shown on first paint: an initials monogram over a
  * progress line that tracks real document readiness rather than a simulated
  * timer, so the page is never gated for longer than it actually needs.
  *
- * It dismisses on `window.load`, or at `MAX_HOLD_MS`, whichever comes first,
- * and skips itself entirely when the document has already loaded (client-side
+ * It dismisses as soon as the page underneath has hydrated and painted, and at
+ * `MAX_HOLD_MS` at the latest, with a `MIN_HOLD_MS` floor so it does not flash.
+ * It skips itself entirely when the document has already loaded (client-side
  * navigations, cache hits) or when the visitor prefers reduced motion.
  */
 export function LoadingScreen() {
@@ -30,23 +37,45 @@ export function LoadingScreen() {
     setLoading(true);
     setProgress(15);
 
-    // Ease toward 90% while assets are in flight; `load` completes the rest.
+    const started = performance.now();
+
+    // Ease toward 90% while assets are in flight; dismissal completes the rest.
     const ticker = setInterval(() => {
       setProgress((prev) => (prev >= 90 ? prev : prev + (90 - prev) * 0.12));
     }, 80);
 
+    let floor: ReturnType<typeof setTimeout> | undefined;
+
     const dismiss = () => {
+      const waited = performance.now() - started;
+      if (waited < MIN_HOLD_MS) {
+        // Asked to leave early. Come back when the floor has passed — guarded
+        // so the triggers below cannot each queue a timer of their own.
+        if (!floor) floor = setTimeout(dismiss, MIN_HOLD_MS - waited);
+        return;
+      }
       clearInterval(ticker);
       setProgress(100);
       setLoading(false);
     };
 
+    // Two frames after this effect runs, React has hydrated the tree and the
+    // browser has painted the page underneath at least once — which is the
+    // point at which covering it stops doing any good.
+    //
+    // `load` is a far later signal: it waits for all three font files and every
+    // deferred script, so gating on it kept the overlay over a page that had
+    // been ready for hundreds of milliseconds. It is still wired up as a
+    // fallback for the case where the frame callbacks are throttled.
+    const painted = requestAnimationFrame(() => requestAnimationFrame(dismiss));
     window.addEventListener('load', dismiss, { once: true });
     const cap = setTimeout(dismiss, MAX_HOLD_MS);
 
     return () => {
       clearInterval(ticker);
       clearTimeout(cap);
+      if (floor) clearTimeout(floor);
+      cancelAnimationFrame(painted);
       window.removeEventListener('load', dismiss);
     };
   }, [reduced]);
