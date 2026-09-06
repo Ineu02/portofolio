@@ -49,9 +49,9 @@ export function Navbar() {
   return (
     <>
       <motion.header
-        initial={{ y: -80, opacity: 0 }}
+        initial={{ y: -80, opacity: 0.001 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
           'fixed inset-x-0 top-0 z-[110] transition-all duration-500',
           scrolled ? 'py-3' : 'py-5'

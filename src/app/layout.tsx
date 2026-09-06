@@ -172,6 +172,46 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} dark`}
       suppressHydrationWarning
     >
+      <head>
+        {/*
+          Without JavaScript the page would render blank.
+          Framer Motion serialises each reveal's `hidden` variant into the
+          server-rendered markup as an inline style, so roughly a hundred
+          elements — the headline among them — ship as `opacity:0` waiting for a
+          script to animate them up. The prose is all there in the HTML; it is
+          simply invisible. This block, which only applies when scripting is off,
+          neutralises those three properties so the page reads as static text.
+
+          `!important` is required: these are inline styles, and nothing else
+          outranks them. The selector only matches elements that actually carry an
+          inline opacity — a reveal waiting to fire — and excludes `aria-hidden`
+          ones, which are the glare sheens and gradient washes that are *meant* to
+          sit at zero until hovered. Revealing those would paint decoration over
+          the cards instead of uncovering text.
+
+          Note this covers scripting-disabled only. A visitor whose JS is merely
+          slow still waits for hydration — the fix for that case is the shortened
+          delays in `animations.ts` and `AppShell`, not a stylesheet.
+        */}
+        {/*
+          The rules must be wrapped in a real `<style>` element. `<noscript>`
+          content is parsed as markup once scripting is off, so bare CSS text
+          here would be rendered as a line of visible gibberish at the top of the
+          page rather than applied.
+        */}
+        <noscript>
+          <style
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html:
+                'header,main{opacity:1!important}' +
+                'header [style*="opacity"]:not([aria-hidden="true"]),' +
+                'main [style*="opacity"]:not([aria-hidden="true"])' +
+                '{opacity:1!important;transform:none!important;filter:none!important}',
+            }}
+          />
+        </noscript>
+      </head>
       <body>
         <StructuredData />
         {/* Skip link for keyboard & screen-reader users */}

@@ -95,9 +95,9 @@ export function CaseStudy({ project }: { project: ProjectWithDetail }) {
 
         {/* Cover art, labelled for what it is */}
         <motion.figure
-          initial={reduced ? undefined : { opacity: 0, y: 24 }}
+          initial={reduced ? undefined : { opacity: 0.001, y: 14 }}
           animate={reduced ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
           className="relative mt-10 overflow-hidden rounded-2xl border border-white/10"
         >
           <div className="relative aspect-[16/9]">

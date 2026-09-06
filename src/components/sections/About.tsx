@@ -241,10 +241,10 @@ function TimelineItem({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0.001, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={viewportOnce}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
       className={`relative pl-8 sm:w-1/2 sm:pl-0 ${
         isLeft ? 'sm:pr-12 sm:text-right' : 'sm:ml-auto sm:pl-12'
       }`}

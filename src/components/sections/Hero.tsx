@@ -134,9 +134,23 @@ export function Hero() {
           The 3D core. Masked to a soft ellipse so it dissolves into the page
           instead of ending at a visible canvas edge, and held at partial
           opacity so the headline never has to compete with it for contrast.
+
+          Sized to one viewport, not to the section. The hero is taller than the
+          screen — 1.96x at 375x812, where the stacked avatar, headline, CTAs and
+          stat grid push it to 1,593px — and a canvas stretched to `inset-0`
+          therefore allocated and cleared 1,345,007 backing pixels a frame to
+          show at most 686,344 of them. Nothing below the fold was ever seen: the
+          scroll transform lifts the object *up* and out, so the lower half of
+          that buffer was pure cost. Capping the height halves the fill work on a
+          phone and moves the core's centre up behind the headline, which is
+          where the composition wanted it anyway.
+
+          `h-screen` (100vh) rather than `100dvh` deliberately: a dynamic unit
+          would re-fire `resize()` and reallocate the backing store every time a
+          mobile browser's URL bar slid away.
         */}
         <motion.div
-          className="absolute inset-0"
+          className="absolute inset-x-0 top-0 h-screen"
           style={{
             opacity: coreOpacity,
             maskImage:
@@ -161,9 +175,9 @@ export function Hero() {
         <div className="mx-auto max-w-4xl text-center">
           {/* Avatar inside the orbital system */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
+            initial={{ opacity: 0.001, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.6, delay: 0.02, ease: [0.22, 1, 0.36, 1] }}
             style={reduced ? undefined : { x: tiltX, y: tiltY }}
             className="relative mx-auto mb-10 h-56 w-56 sm:h-64 sm:w-64"
           >
@@ -237,9 +251,9 @@ export function Hero() {
 
           {/* Availability badge */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0.001, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
+            transition={{ duration: 0.5, delay: 0.16 }}
             className="mx-auto mb-8 inline-flex items-center gap-2.5 rounded-full glass px-4 py-2 text-sm text-ink-muted"
           >
             <span className="relative flex h-2 w-2" aria-hidden>
@@ -255,10 +269,20 @@ export function Hero() {
             display face at clamp() sizes will otherwise shave the bottom of
             the "g" at some viewport widths.
           */}
+          {/*
+            The headline is the LCP element, so its entrance is deliberately the
+            shortest on the page. It used to wait 0.45s and then take 0.9s, which
+            put the largest text on the page nearly a second behind hydration
+            before it crossed the opacity threshold that counts as painted — and
+            it animated `filter: blur(8px)`, which forces the text through a
+            full-size blur pass on every frame of that second. The blur is gone
+            and the delay is nominal; the cascade below it still reads because
+            everything *else* follows the h1 rather than racing it.
+          */}
           <motion.h1
-            initial={{ opacity: 0, y: 26, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.9, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0.001, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.04, ease: [0.22, 1, 0.36, 1] }}
             className="font-display text-display-lg text-balance pb-1 leading-[1.08] text-white"
           >
             Building Secure
@@ -270,9 +294,9 @@ export function Hero() {
 
           {/* Subtitle */}
           <motion.p
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0.001, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
+            transition={{ duration: 0.55, delay: 0.28 }}
             className="mx-auto mt-8 max-w-2xl text-balance text-base leading-relaxed text-ink-muted sm:text-lg"
           >
             {profile.bio}
@@ -280,9 +304,9 @@ export function Hero() {
 
           {/* Primary CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0.001, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.75 }}
+            transition={{ duration: 0.5, delay: 0.36 }}
             className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
           >
             <Magnetic>
@@ -319,9 +343,9 @@ export function Hero() {
 
           {/* Social CTAs */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0.001 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.85 }}
+            transition={{ duration: 0.5, delay: 0.44 }}
             className="mt-6 flex flex-wrap items-center justify-center gap-3"
           >
             {heroSocials.map((social) => {
@@ -349,7 +373,7 @@ export function Hero() {
             animate="visible"
             variants={{
               hidden: {},
-              visible: { transition: { staggerChildren: 0.09, delayChildren: 0.95 } },
+              visible: { transition: { staggerChildren: 0.06, delayChildren: 0.5 } },
             }}
             className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
           >
@@ -357,11 +381,11 @@ export function Hero() {
               <motion.div
                 key={stat.label}
                 variants={{
-                  hidden: { opacity: 0, y: 22 },
+                  hidden: { opacity: 0.001, y: 14 },
                   visible: {
                     opacity: 1,
                     y: 0,
-                    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                    transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
                   },
                 }}
                 whileHover={reduced ? undefined : { y: -5 }}
@@ -387,9 +411,9 @@ export function Hero() {
       <motion.button
         onClick={() => scrollToSection('#about')}
         aria-label="Scroll to the About section"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 0.001 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.4 }}
+        transition={{ delay: 0.8 }}
         className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 sm:block"
       >
         <div className="flex h-10 w-6 items-start justify-center rounded-full border border-white/20 p-1.5">

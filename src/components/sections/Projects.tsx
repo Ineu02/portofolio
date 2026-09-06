@@ -112,10 +112,13 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.9 }}
+      // `initial` matches the shared reveal convention (see `animations.ts`).
+      // `exit` still goes to a true 0 — by then JS is demonstrably running, and a
+      // filtered-out card should leave completely.
+      initial={{ opacity: 0.001, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ opacity: 0, scale: 0.94 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       viewport={viewportOnce}
       className="h-full"
     >

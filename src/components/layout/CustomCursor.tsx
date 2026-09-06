@@ -87,9 +87,20 @@ export function CustomCursor() {
     <AnimatePresence>
       {visible && (
         <>
-          {/* Trailing ring */}
+          {/*
+            Trailing ring.
+
+            No `mix-blend-difference` here, deliberately. A blend mode on a fixed
+            element forces the compositor to re-read what is underneath and
+            re-composite that region on every pointer move, and underneath this
+            one is the whole page — including the hero canvas repainting on its
+            own rAF. On a near-black page the difference blend was also doing
+            almost nothing visible: gold against #050505 inverts to very nearly
+            the same gold. A plain gold border at 70% is the same look without
+            asking the compositor to prove it.
+          */}
           <motion.div
-            className="pointer-events-none fixed left-0 top-0 z-[150] hidden rounded-full border border-gold/70 mix-blend-difference lg:block"
+            className="pointer-events-none fixed left-0 top-0 z-[150] hidden rounded-full border border-gold/70 lg:block"
             style={{ x: ringX, y: ringY, translateX: '-50%', translateY: '-50%' }}
             animate={{
               width: hovering ? 56 : 34,

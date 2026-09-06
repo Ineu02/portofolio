@@ -110,6 +110,12 @@ export function Tilt3D({
       >
         {children}
 
+        {/*
+          The glare is `opacity: 0` at rest by design — it is a hover affordance,
+          not content, and `aria-hidden` decoration that never holds text. Unlike
+          the reveal variants there is nothing here to lose if JS never runs, so
+          a true zero is correct.
+        */}
         {glare && (
           <motion.span
             aria-hidden
